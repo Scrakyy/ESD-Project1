@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Management with JWT</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 50px auto;
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        h2, h3 {
+            color: #4A90E2;
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        input, button {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        input:focus {
+            outline: none;
+            border-color: #4A90E2;
+        }
+        button {
+            background-color: #4A90E2;
+            color: white;
+            cursor: pointer;
+            border: none;
+        }
+        button:hover {
+            background-color: #357ABD;
+        }
+        .output {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #4A90E2;
+            color: white;
+        }
+        td {
+            background-color: #f9f9f9;
+        }
+        .logout-button {
+            background-color: #d9534f;
+            color: white;
+            margin-top: 20px;
+        }
+        .logout-button:hover {
+            background-color: #c9302c;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Booking Management with JWT</h2>
+
+        <h3>Create New Booking</h3>
+        <form id="createBookingForm">
+            <label for="facilityDescription">Facility Description:</label>
+            <input type="text" id="facilityDescription" required>
+
+            <label for="bookingDateFrom">Booking Date From:</label>
+            <input type="date" id="bookingDateFrom" required>
+
+            <label for="bookingDateTo">Booking Date To:</label>
+            <input type="date" id="bookingDateTo" required>
+
+            <label for="bookingBy">Booking By:</label>
+            <input type="text" id="bookingBy" required>
+
+            <label for="bookingStatus">Booking Status:</label>
+            <input type="text" id="bookingStatus" required>
+
+            <button type="submit">Create Booking</button>
+        </form>
+
+        <h3>Update Booking</h3>
+        <form id="updateBookingForm">
+            <label for="bookingId">Booking ID:</label>
+            <input type="number" id="bookingId" required>
+
+            <label for="facilityDescriptionUpdate">Facility Description:</label>
+            <input type="text" id="facilityDescriptionUpdate" required>
+
+            <label for="bookingDateFromUpdate">Booking Date From:</label>
+            <input type="date" id="bookingDateFromUpdate" required>
+
+            <label for="bookingDateToUpdate">Booking Date To:</label>
+            <input type="date" id="bookingDateToUpdate" required>
+
+            <label for="bookingByUpdate">Booking By:</label>
+            <input type="text" id="bookingByUpdate" required>
+
+            <label for="bookingStatusUpdate">Booking Status:</label>
+            <input type="text" id="bookingStatusUpdate" required>
+
+            <button type="submit">Update Booking</button>
+        </form>
+
+        <h3>Get Bookings</h3>
+        <!-- Filter Options -->
+<label for="filterBy">Filter By:</label>
+<select id="filterBy">
+    <option value="">None</option>
+    <option value="facilityDescription">Facility Description</option>
+    <option value="bookingBy">Booking By</option>
+    <option value="bookingStatus">Booking Status</option>
+</select>
+<input type="text" id="filterValue" placeholder="Enter filter value">
+
+<!-- Sort Options -->
+<label for="sortBy">Sort By:</label>
+<select id="sortBy">
+    <option value="bookingDateFrom">Booking Date From</option>
+    <option value="bookingDateTo">Booking Date To</option>
+    <option value="facilityDescription">Facility Description</option>
+    <option value="bookingBy">Booking By</option>
+    <option value="bookingStatus">Booking Status</option>
+</select>
+
+<label for="ascending">Ascending:</label>
+<input type="checkbox" id="ascending" checked>
+
+<button onclick="getAllBookings()">Get All Bookings</button>
+        <button onclick="getBookingById()">Get Booking by ID</button>
+        
+        
+
+        <h3>Delete Booking</h3>
+        <label for="deleteBookingIds">Booking IDs (comma-separated):</label>
+        <input type="text" id="deleteBookingIds" required>
+        <button onclick="deleteBookings()">Delete Bookings</button>
+
+        <h3>All Bookings</h3>
+        <div id="bookingsTable" class="output"></div>
+
+        <h3>Booking Details by ID</h3>
+        <div id="bookingDetailsTable" class="output"></div>
+
+        <h3>User Booking History</h3>
+        <button onclick="getUserBookingHistory()">View My Booking History</button>
+        <div id="userBookingHistoryTable" class="output"></div>
+
+        <button class="logout-button" onclick="logout()">Logout</button>
+    </div>
+
+    <script>
+        const apiUrl = 'https://localhost:44358/api/Booking';
+
+        function updateJwtToken() {
+            return localStorage.getItem('jwtToken');
+        }
+
+        document.getElementById('createBookingForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const jwtToken = updateJwtToken();
+            
+            const data = {
+                facilityDescription: document.getElementById('facilityDescription').value,
+                bookingDateFrom: document.getElementById('bookingDateFrom').value,
+                bookingDateTo: document.getElementById('bookingDateTo').value,
+                bookingBy: document.getElementById('bookingBy').value,
+                bookingStatus: document.getElementById('bookingStatus').value
+            };
+
+            fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${jwtToken}`
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('output').innerText = 'Booking created: ' + JSON.stringify(data);
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        function updateBooking() {
+    const bookingId = document.getElementById('bookingId').value;
+    const jwtToken = localStorage.getItem('jwtToken'); // Ensure the JWT token is correctly retrieved
+
+    const data = {
+        bookingId: bookingId,
+        facilityDescription: document.getElementById('facilityDescriptionUpdate').value,
+        bookingDateFrom: document.getElementById('bookingDateFromUpdate').value,
+        bookingDateTo: document.getElementById('bookingDateToUpdate').value,
+        bookingBy: document.getElementById('bookingByUpdate').value,
+        bookingStatus: document.getElementById('bookingStatusUpdate').value
+    };
+
+    fetch(`${apiUrl}/${bookingId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${jwtToken}` // Include JWT token for authorization
+        },
+        body: JSON.stringify(data) // Send the updated booking data as JSON
+    })
+    .then(response => {
+        if (!response.ok) {
+            // If the response is not OK, throw an error with a meaningful message
+            return response.json().then(error => { throw new Error(error.detail || 'Failed to update booking'); });
+        }
+        return response.json(); // Parse the response JSON
+    })
+    .then(data => {
+        document.getElementById('output').innerText = 'Booking updated: ' + JSON.stringify(data);
+        getAllBookings(); // Refresh the list of bookings to reflect the update
+    })
+    .catch(error => {
+        console.error('Error:', error); // Log the error to the console
+        document.getElementById('output').innerText = 'Error updating booking: ' + error.message;
+    });
+}
+
+// Attach the updateBooking function to the form submission event
+document.getElementById('updateBookingForm').addEventListener('submit', function(event) {
+    event.preventDefault(); // Prevent the default form submission behavior
+    updateBooking(); // Call the updateBooking function when the form is submitted
+});
+
+
+function getAllBookings() {
+    const jwtToken = localStorage.getItem('jwtToken'); // Ensure the JWT token is correctly retrieved
+
+    // Get sort and filter options
+    const sortBy = document.getElementById('sortBy').value;
+    const ascending = document.getElementById('ascending').checked;
+    const filterBy = document.getElementById('filterBy').value;
+    const filterValue = document.getElementById('filterValue').value;
+
+    // Construct the query string
+    let queryString = `?sortBy=${sortBy}&ascending=${ascending}`;
+    if (filterBy && filterValue) {
+        queryString += `&filterBy=${filterBy}&filterValue=${encodeURIComponent(filterValue)}`;
+    }
+
+    fetch(`${apiUrl}${queryString}`, {
+        headers: {
+            'Authorization': `Bearer ${jwtToken}` // Include JWT token for authorization
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const table = document.createElement('table');
+        const thead = document.createElement('thead');
+        const tbody = document.createElement('tbody');
+        
+        // Create table headers
+        thead.innerHTML = `
+            <tr>
+                <th>ID</th>
+                <th>Facility Description</th>
+                <th>Booking Date From</th>
+                <th>Booking Date To</th>
+                <th>Booking By</th>
+                <th>Status</th>
+            </tr>
+        `;
+        
+        // Populate table rows
+        data.forEach(booking => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${booking.bookingId}</td>
+                <td>${booking.facilityDescription}</td>
+                <td>${booking.bookingDateFrom}</td>
+                <td>${booking.bookingDateTo}</td>
+                <td>${booking.bookingBy}</td>
+                <td>${booking.bookingStatus}</td>
+            `;
+            tbody.appendChild(row);
+        });
+
+        table.appendChild(thead);
+        table.appendChild(tbody);
+        document.getElementById('bookingsTable').innerHTML = ''; // Clear previous content
+        document.getElementById('bookingsTable').appendChild(table);
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+        function getBookingById() {
+            const jwtToken = updateJwtToken();
+            
+            const bookingId = prompt('Enter Booking ID:');
+            fetch(`${apiUrl}/${bookingId}`, {
+                headers: {
+                    'Authorization': `Bearer ${jwtToken}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const table = document.createElement('table');
+                const thead = document.createElement('thead');
+                const tbody = document.createElement('tbody');
+                
+                // Create table headers
+                thead.innerHTML = `
+                    <tr>
+                        <th>ID</th>
+                        <th>Facility Description</th>
+                        <th>Booking Date From</th>
+                        <th>Booking Date To</th>
+                        <th>Booking By</th>
+                        <th>Status</th>
+                    </tr>
+                `;
+
+                // Create table row
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${data.bookingId}</td>
+                    <td>${data.facilityDescription}</td>
+                    <td>${data.bookingDateFrom}</td>
+                    <td>${data.bookingDateTo}</td>
+                    <td>${data.bookingBy}</td>
+                    <td>${data.bookingStatus}</td>
+                `;
+                tbody.appendChild(row);
+
+                table.appendChild(thead);
+                table.appendChild(tbody);
+                document.getElementById('bookingDetailsTable').innerHTML = ''; // Clear previous content
+                document.getElementById('bookingDetailsTable').appendChild(table);
+            })
+            .catch(error => console.error('Error:', error));
+        }
+        function getUserBookingHistory() {
+    const jwtToken = updateJwtToken();
+    const user = prompt("Please enter your username or email:");
+
+    fetch(`${apiUrl}/history/${user}`, {
+        headers: {
+            'Authorization': `Bearer ${jwtToken}`
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const table = document.createElement('table');
+        const thead = document.createElement('thead');
+        const tbody = document.createElement('tbody');
+        
+        // Create table headers
+        thead.innerHTML = `
+            <tr>
+                <th>ID</th>
+                <th>Facility Description</th>
+                <th>Booking Date From</th>
+                <th>Booking Date To</th>
+                <th>Booking By</th>
+                <th>Status</th>
+            </tr>
+        `;
+        
+        // Populate table rows
+        data.forEach(booking => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${booking.bookingId}</td>
+                <td>${booking.facilityDescription}</td>
+                <td>${booking.bookingDateFrom}</td>
+                <td>${booking.bookingDateTo}</td>
+                <td>${booking.bookingBy}</td>
+                <td>${booking.bookingStatus}</td>
+            `;
+            tbody.appendChild(row);
+        });
+
+        table.appendChild(thead);
+        table.appendChild(tbody);
+        document.getElementById('userBookingHistoryTable').innerHTML = ''; // Clear previous content
+        document.getElementById('userBookingHistoryTable').appendChild(table);
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+        function deleteBookings() {
+    const jwtToken = localStorage.getItem('jwtToken');
+    const bookingIdsInput = document.getElementById('deleteBookingIds').value;
+
+    // Convert the comma-separated values into an array of integers
+    const bookingIds = bookingIdsInput.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+
+    if (bookingIds.length === 0) {
+        alert("Please enter valid Booking IDs.");
+        return;
+    }
+
+    fetch(apiUrl, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${jwtToken}`
+        },
+        body: JSON.stringify(bookingIds)
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert(data.message);
+        // Optionally, refresh the booking list after deletion
+        getAllBookings();
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+        function logout() {
+            localStorage.removeItem('jwtToken');
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>
